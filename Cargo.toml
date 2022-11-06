@@ -1,0 +1,12 @@
+[package]
+name = "serial"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+[build-dependencies]
+embed-resource="1.7.3"
+[dependencies]
+native-windows-gui = { version = "1.0.13", default-features = false, features = ["list-view","tabs","menu","listbox","combobox"
+] }
+serialport = "4.2.0"
+lazy_static = "1.4.0"
