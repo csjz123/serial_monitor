@@ -29,7 +29,7 @@ pub fn open(port_name: &str, baud_rate: u32, time: u64) -> Option<Box<dyn Serial
         Err(_) => None,
     }
 }
-pub fn close() {
+pub fn stop_read() {
     ARRAY.lock().unwrap()[0] = false;
 }
 pub fn read(port: &Option<Box<dyn SerialPort>>) {
@@ -44,10 +44,13 @@ pub fn read(port: &Option<Box<dyn SerialPort>>) {
             thread::spawn(move || loop {
                 if ARRAY.lock().unwrap()[0] {
                     match port.read(serial_buf.as_mut_slice()) {
-                        Ok(_) => {
-                            let a = str::from_utf8(&serial_buf).expect("msg").to_owned();
-                            print!("{a}");
-                        }
+                        Ok(_) => match str::from_utf8(&serial_buf) {
+                            Ok(_) => {
+                                let a = str::from_utf8(&serial_buf).unwrap().to_owned();
+                                print!("{a}");
+                            }
+                            Err(_) => {}
+                        },
                         Err(_) => {
                             //eprintln!("{:?}", e);
                         }

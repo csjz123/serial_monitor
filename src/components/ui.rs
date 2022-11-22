@@ -21,6 +21,7 @@ pub struct SerialTool {
     close: nwg::Button,                              //关闭串口
     clear: nwg::Button,                              //清屏
     read: nwg::Button,                               //读取
+    stop_read: nwg::Button,                          //停止读取
     write: nwg::Button,                              //写入
 }
 
@@ -40,6 +41,7 @@ impl SerialTool {
             println!("{:?}", ports);
             self.combobox_ports.set_collection(ports);
         };
+        self.close_port();
     }
 
     fn open(&self) {
@@ -49,21 +51,22 @@ impl SerialTool {
         ) {
             (Some(port_name), Some(baud_rate)) => {
                 let baud_rate: u32 = baud_rate.parse().unwrap();
-                self.open.set_visible(false);
+                self.open.set_enabled(false);
 
                 PORT.lock().unwrap()[0] = serial_port::open(&port_name, baud_rate, 10);
             }
             _ => {
                 nwg::error_message("Error", "请选择端口和波特率");
-                self.open.set_visible(true);
+                self.open.set_enabled(true);
                 PORT.lock().unwrap()[0] = None;
             }
         }
     }
 
     fn close_port(&self) {
-        self.open.set_visible(true);
-        serial_port::close();
+        self.read.set_enabled(true);
+        self.open.set_enabled(true);
+        serial_port::stop_read();
         PORT.lock().unwrap()[0] = None;
     }
     fn clear(&self) {
@@ -72,6 +75,13 @@ impl SerialTool {
     fn read(&self) {
         let p = &PORT.lock().unwrap()[0];
         serial_port::read(p);
+        self.read.set_enabled(false);
+        self.stop_read.set_enabled(true);
+    }
+    fn stop_read(&self) {
+        serial_port::stop_read();
+        self.stop_read.set_enabled(false);
+        self.read.set_enabled(true);
     }
     fn write(&self) {
         let p = &PORT.lock().unwrap()[0];
@@ -138,7 +148,7 @@ mod serial_tool {
                 .parent(&data.window)
                 .size((100, 30))
                 .position((500, 160))
-                .text("开启串口")
+                .text("连接串口")
                 .build(&mut data.open)?;
 
             nwg::Button::builder()
@@ -159,13 +169,21 @@ mod serial_tool {
                 .parent(&data.window)
                 .size((100, 30))
                 .position((500, 310))
-                .text("读取")
+                .text("读取串口")
                 .build(&mut data.read)?;
 
             nwg::Button::builder()
                 .parent(&data.window)
                 .size((100, 30))
                 .position((500, 360))
+                .text("停止读取")
+                .enabled(false)
+                .build(&mut data.stop_read)?;
+
+            nwg::Button::builder()
+                .parent(&data.window)
+                .size((100, 30))
+                .position((500, 410))
                 .text("写入")
                 .build(&mut data.write)?;
 
@@ -194,6 +212,8 @@ mod serial_tool {
                                     SerialTool::clear(&ui);
                                 } else if &handle == &ui.read {
                                     SerialTool::read(&ui);
+                                } else if &handle == &ui.stop_read {
+                                    SerialTool::stop_read(&ui);
                                 } else if &handle == &ui.write {
                                     SerialTool::write(&ui);
                                 }
